@@ -1,0 +1,545 @@
+query：
+
+Explain what retry_with_backoff does?
+
+检索：
+
+Retrieved Snippets:
+Snippet 1:
+Code:
+def retry(tries=10, delay=1, backoff=2, retry_exception=None):
+    """
+    Retry "tries" times, with initial "delay", increasing delay "delay*backoff" each time.
+    Without exception success means when function returns valid object.
+    With exception success when no exceptions
+    """
+    assert tries > 0, "tries must be 1 or greater"
+    catching_mode = bool(retry_exception)
+
+    def deco_retry(f):
+        @functools.wraps(f)
+        def f_retry(*args, **kwargs):
+            mtries, mdelay = tries, delay
+
+            while mtries > 0:
+                time.sleep(mdelay)
+                mdelay *= backoff
+                try:
+                    rv = f(*args, **kwargs)
+                    if not catching_mode and rv:
+                        return rv
+                except retry_exception:
+                    pass
+                else:
+                    if catching_mode:
+                        return rv
+                mtries -= 1
+                if mtries is 0 and not catching_mode:
+                    return False
+                if mtries is 0 and catching_mode:
+                    return f(*args, **kwargs)  # extra try, to avoid except-raise syntax
+                log.debug("{0} try, sleeping for {1} sec".format(tries-mtries, mdelay))
+            raise Exception("unreachable code")
+        return f_retry
+    return deco_retry
+Docstring:
+Retry "tries" times, with initial "delay", increasing delay "delay*backoff" each time.
+    Without exception success means when function returns valid object.
+    With exception success when no exceptions
+
+Snippet 2:
+Code:
+def _process(self, on_commit: UpdateCallable, on_rollback: UpdateCallable) -> Any:
+        """
+        Process action. oncommit is a callback to execute action, onrollback is
+        a callback to execute if the oncommit() has been called and a rollback
+        is required
+        """
+
+        _debug("---> commiting", on_commit)
+        result = self._do_with_retry(on_commit)
+
+        if len(self._transactions) > 0:
+            # add statement to rollback log in case something goes wrong
+            self._transactions[-1].insert(0, on_rollback)
+
+        return result
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+        a callback to execute if the oncommit() has been called and a rollback
+        is required
+
+Snippet 3:
+Code:
+def rollback(self) -> None:
+        """
+        Roll back to previous database state. However stay inside transaction
+        management.
+        """
+        if len(self._transactions) == 0:
+            raise RuntimeError("rollback called outside transaction")
+
+        _debug("rollback:", self._transactions[-1])
+        # if something goes wrong here, nothing we can do about it, leave
+        # database as is.
+        try:
+            # for every rollback action ...
+            for on_rollback in self._transactions[-1]:
+                # execute it
+                _debug("--> rolling back", on_rollback)
+                self._do_with_retry(on_rollback)
+        except:  # noqa: E722
+            _debug("--> rollback failed")
+            exc_class, exc, tb = sys.exc_info()
+            raise tldap.exceptions.RollbackError(
+                "FATAL Unrecoverable rollback error: %r" % exc)
+        finally:
+            # reset everything to clean state
+            _debug("--> rollback success")
+            self.reset()
+Docstring:
+Roll back to previous database state. However stay inside transaction
+        management.
+
+大模型生成:
+
+Generated Candidates:
+Candidate 1:
+Query: Explain what retry_with_backoff does?
+
+Relevant Code Snippets:
+Snippet 1:
+Code:
+def retry(tries=10, delay=1, backoff=2, retry_exception=None):
+    """
+    Retry "tries" times, with initial "delay", increasing delay "delay*backoff" each time.
+    Without exception success means when function returns valid object.
+    With exception success when no exceptions
+    """
+    assert tries > 0, "tries must be 1 or greater"
+    catching_mode = bool(retry_exception)
+
+    def deco_retry(f):
+        @functools.wraps(f)
+        def f_retry(*args, **kwargs):
+            mtries, mdelay = tries, delay
+
+            while mtries > 0:
+                time.sleep(mdelay)
+                mdelay *= backoff
+                try:
+                    rv = f(*args, **kwargs)
+                    if not catching_mode and rv:
+                        return rv
+                except retry_exception:
+                    pass
+                else:
+                    if catching_mode:
+                        return rv
+                mtries -= 1
+                if mtries is 0 and not catching_mode:
+                    return False
+                if mtries is 0 and catching_mode:
+                    return f(*args, **kwargs)  # extra try, to avoid except-raise syntax
+                log.debug("{0} try, sleeping for {1} sec".format(tries-mtries, mdelay))
+            raise Exception("unreachable code")
+        return f_retry
+    return deco_retry
+Docstring:
+Retry "tries" times, with initial "delay", increasing delay "delay*backoff" each time.
+    Without exception success means when function returns valid object.
+    With exception success when no exceptions
+
+Snippet 2:
+Code:
+def _process(self, on_commit: UpdateCallable, on_rollback: UpdateCallable) -> Any:
+        """
+        Process action. oncommit is a callback to execute action, onrollback is
+        a callback to execute if the oncommit() has been called and a rollback()
+        has been called.
+        """
+        if on_commit:
+            on_commit(self)
+        if on_rollback:
+            on_rollback(self)
+        return on_commit or on_rollback
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+a callback to execute if the oncommit() has been called and a rollback()
+has been called.
+
+Snippet 3:
+Code:
+def retry(tries=10, delay=1, backoff=2, retry_exception=None):
+    """
+    Retry "tries" times, with initial "delay", increasing delay "delay*backoff" each time.
+    Without exception success means when function returns valid object.
+    With exception success when no exceptions
+    """
+    assert tries > 0, "tries must be 1 or greater"
+    catching_mode = bool(retry_exception)
+
+    def deco_retry(f):
+        @functools.wraps(f)
+        def f_retry(*args, **kwargs):
+            mtries, mdelay = tries, delay
+
+            while mtries > 0:
+                time.sleep(mdelay)
+                mdelay *= backoff
+                try:
+                    rv = f(*args, **kwargs)
+                    if not catching_mode and rv:
+                        return rv
+                except retry_exception:
+                    pass
+                else:
+                    if catching_mode:
+                        return rv
+                mtries -= 1
+                if mtries is 0 and not catching_mode:
+                    return False
+                if mtries is 0 and catching_mode:
+                    return f(*args, **kwargs)  # extra try, to avoid except-raise syntax
+                log.debug("{0} try, sleeping for {1} sec".format(tries-mtries, mdelay))
+            raise Exception("unreachable code")
+        return f_retry
+    return deco_retry
+Docstring:
+Retry "tries" times, with initial "delay", increasing delay "delay*backoff" each time.
+    Without exception success means when function returns valid object.
+    With exception success when no exceptions
+
+Candidate 2:
+Query: Explain what retry_with_backoff does?
+
+Relevant Code Snippets:
+Snippet 1:
+Code:
+def retry(tries=10, delay=1, backoff=2, retry_exception=None):
+    """
+    Retry "tries" times, with initial "delay", increasing delay "delay*backoff" each time.
+    Without exception success means when function returns valid object.
+    With exception success when no exceptions
+    """
+    assert tries > 0, "tries must be 1 or greater"
+    catching_mode = bool(retry_exception)
+
+    def deco_retry(f):
+        @functools.wraps(f)
+        def f_retry(*args, **kwargs):
+            mtries, mdelay = tries, delay
+
+            while mtries > 0:
+                time.sleep(mdelay)
+                mdelay *= backoff
+                try:
+                    rv = f(*args, **kwargs)
+                    if not catching_mode and rv:
+                        return rv
+                except retry_exception:
+                    pass
+                else:
+                    if catching_mode:
+                        return rv
+                mtries -= 1
+                if mtries is 0 and not catching_mode:
+                    return False
+                if mtries is 0 and catching_mode:
+                    return f(*args, **kwargs)  # extra try, to avoid except-raise syntax
+                log.debug("{0} try, sleeping for {1} sec".format(tries-mtries, mdelay))
+            raise Exception("unreachable code")
+        return f_retry
+    return deco_retry
+Docstring:
+Retry "tries" times, with initial "delay", increasing delay "delay*backoff" each time.
+    Without exception success means when function returns valid object.
+    With exception success when no exceptions
+
+Snippet 2:
+Code:
+def _process(self, on_commit: UpdateCallable, on_rollback: UpdateCallable) -> Any:
+        """
+        Process action. oncommit is a callback to execute action, onrollback is
+        a callback to execute if the oncommit() has been called and a rollback()
+        has been called.
+        """
+        if on_commit:
+            on_commit(self)
+        if on_rollback:
+            on_rollback(self)
+        return on_commit or on_rollback
+
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+a callback to execute if the oncommit() has been called and a rollback()
+has been called.
+"""
+
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+a callback to execute if the oncommit() has been called and a rollback()
+has been called.
+"""
+
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+a callback to execute if the oncommit() has been called and a rollback()
+has been called.
+"""
+
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+a callback to execute if the oncommit() has been called and a rollback()
+has been called.
+"""
+
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+a callback to execute if the oncommit() has been called and a rollback()
+has been called.
+"""
+
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+a callback to execute if the oncommit() has been called and a rollback()
+has been called.
+"""
+
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+a callback to execute if the oncommit() has been called and a rollback()
+has been called.
+"""
+
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+a callback to execute if the oncommit() has been called and a rollback()
+has been called.
+"""
+
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+a callback to execute if the oncommit() has been called and a rollback()
+has been called.
+"""
+
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+a callback to execute if the oncommit() has been called and
+
+Candidate 3:
+Query: Explain what retry_with_backoff does?
+
+Relevant Code Snippets:
+Snippet 1:
+Code:
+def retry(tries=10, delay=1, backoff=2, retry_exception=None):
+    """
+    Retry "tries" times, with initial "delay", increasing delay "delay*backoff" each time.
+    Without exception success means when function returns valid object.
+    With exception success when no exceptions
+    """
+    assert tries > 0, "tries must be 1 or greater"
+    catching_mode = bool(retry_exception)
+
+    def deco_retry(f):
+        @functools.wraps(f)
+        def f_retry(*args, **kwargs):
+            mtries, mdelay = tries, delay
+
+            while mtries > 0:
+                time.sleep(mdelay)
+                mdelay *= backoff
+                try:
+                    rv = f(*args, **kwargs)
+                    if not catching_mode and rv:
+                        return rv
+                except retry_exception:
+                    pass
+                else:
+                    if catching_mode:
+                        return rv
+                mtries -= 1
+                if mtries is 0 and not catching_mode:
+                    return False
+                if mtries is 0 and catching_mode:
+                    return f(*args, **kwargs)  # extra try, to avoid except-raise syntax
+                log.debug("{0} try, sleeping for {1} sec".format(tries-mtries, mdelay))
+            raise Exception("unreachable code")
+        return f_retry
+    return deco_retry
+Docstring:
+Retry "tries" times, with initial "delay", increasing delay "delay*backoff" each time.
+    Without exception success means when function returns valid object.
+    With exception success when no exceptions
+
+Snippet 2:
+Code:
+def _process(self, on_commit: UpdateCallable, on_rollback: UpdateCallable) -> Any:
+        """
+        Process action. oncommit is a callback to execute action, onrollback is
+        a callback to execute if the oncommit() has been called and a rollback()
+        has been called.
+        """
+        if on_commit:
+            on_commit(self)
+        if on_rollback:
+            on_rollback(self)
+        return on_commit or on_rollback
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+a callback to execute if the oncommit() has been called and a rollback()
+has been called.
+
+Snippet 3:
+Code:
+def _process(self, on_commit: UpdateCallable, on_rollback: UpdateCallable) -> Any:
+        """
+        Process action. oncommit is a callback to execute action, onrollback is
+        a callback to execute if the oncommit() has been called and a rollback()
+        has been called.
+        """
+        if on_commit:
+            on_commit(self)
+        if on_rollback:
+            on_rollback(self)
+        return on_commit or on_rollback
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+a callback to execute if the oncommit() has been called and a rollback()
+has been called.
+
+Snippet 4:
+Code:
+def _process(self, on_commit: UpdateCallable, on_rollback: UpdateCallable) -> Any:
+        """
+        Process action. oncommit is a callback to execute action, onrollback is
+        a callback to execute if the oncommit() has been called and a rollback()
+        has been called.
+        """
+        if on_commit:
+            on_commit(self)
+        if on_rollback:
+            on_rollback(self)
+        return on_commit or on_rollback
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+a callback to execute if the oncommit() has been called and a rollback()
+has been called.
+
+Snippet 5:
+Code:
+def _process(self, on_commit: UpdateCallable, on_rollback: UpdateCallable) -> Any:
+        """
+        Process action. oncommit is a callback to execute action, onrollback is
+        a callback to execute if the oncommit()
+
+
+RL优化
+		
+Best Candidate (Reward: 0.70):
+Query: Explain what retry_with_backoff does?
+
+Relevant Code Snippets:
+Snippet 1:
+Code:
+def retry(tries=10, delay=1, backoff=2, retry_exception=None):
+    """
+    Retry "tries" times, with initial "delay", increasing delay "delay*backoff" each time.
+    Without exception success means when function returns valid object.
+    With exception success when no exceptions
+    """
+    assert tries > 0, "tries must be 1 or greater"
+    catching_mode = bool(retry_exception)
+
+    def deco_retry(f):
+        @functools.wraps(f)
+        def f_retry(*args, **kwargs):
+            mtries, mdelay = tries, delay
+
+            while mtries > 0:
+                time.sleep(mdelay)
+                mdelay *= backoff
+                try:
+                    rv = f(*args, **kwargs)
+                    if not catching_mode and rv:
+                        return rv
+                except retry_exception:
+                    pass
+                else:
+                    if catching_mode:
+                        return rv
+                mtries -= 1
+                if mtries is 0 and not catching_mode:
+                    return False
+                if mtries is 0 and catching_mode:
+                    return f(*args, **kwargs)  # extra try, to avoid except-raise syntax
+                log.debug("{0} try, sleeping for {1} sec".format(tries-mtries, mdelay))
+            raise Exception("unreachable code")
+        return f_retry
+    return deco_retry
+Docstring:
+Retry "tries" times, with initial "delay", increasing delay "delay*backoff" each time.
+    Without exception success means when function returns valid object.
+    With exception success when no exceptions
+
+Snippet 2:
+Code:
+def _process(self, on_commit: UpdateCallable, on_rollback: UpdateCallable) -> Any:
+        """
+        Process action. oncommit is a callback to execute action, onrollback is
+        a callback to execute if the oncommit() has been called and a rollback()
+        has been called.
+        """
+        if on_commit:
+            on_commit(self)
+        if on_rollback:
+            on_rollback(self)
+        return on_commit or on_rollback
+Docstring:
+Process action. oncommit is a callback to execute action, onrollback is
+a callback to execute if the oncommit() has been called and a rollback()
+has been called.
+
+Snippet 3:
+Code:
+def retry(tries=10, delay=1, backoff=2, retry_exception=None):
+    """
+    Retry "tries" times, with initial "delay", increasing delay "delay*backoff" each time.
+    Without exception success means when function returns valid object.
+    With exception success when no exceptions
+    """
+    assert tries > 0, "tries must be 1 or greater"
+    catching_mode = bool(retry_exception)
+
+    def deco_retry(f):
+        @functools.wraps(f)
+        def f_retry(*args, **kwargs):
+            mtries, mdelay = tries, delay
+
+            while mtries > 0:
+                time.sleep(mdelay)
+                mdelay *= backoff
+                try:
+                    rv = f(*args, **kwargs)
+                    if not catching_mode and rv:
+                        return rv
+                except retry_exception:
+                    pass
+                else:
+                    if catching_mode:
+                        return rv
+                mtries -= 1
+                if mtries is 0 and not catching_mode:
+                    return False
+                if mtries is 0 and catching_mode:
+                    return f(*args, **kwargs)  # extra try, to avoid except-raise syntax
+                log.debug("{0} try, sleeping for {1} sec".format(tries-mtries, mdelay))
+            raise Exception("unreachable code")
+        return f_retry
+    return deco_retry
+Docstring:
+Retry "tries" times, with initial "delay", increasing delay "delay*backoff" each time.
+    Without exception success means when function returns valid object.
+    With exception success when no exceptions
