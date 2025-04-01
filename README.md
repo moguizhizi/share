@@ -1,5 +1,10 @@
-本项目实现了一个基于 RAG（Retrieval-Augmented Generation）的 RL 引导代码助手，旨在通过检索相关代码片段并生成答案来解决用户关于代码的查询。
-系统结合了检索、生成和强化学习（RL）优化三个核心模块，支持代码相关的任务。
+## 概述
+
+本项目实现了一个基于 RAG（`Retrieval-Augmented Generation`）的 RL 引导代码助手，首先通过检索系统获取相关代码片段和生成答案来解决用户关于代码的问题。系统包含以下核心模块：
+
+1. **检索**：通过检索系统获取相关代码片段，辅助生成答案。
+2. **主知识**：结合生成模型，生成关于代码的答案。
+3. **强化学习（RL）优化**：使用 RL 优化生成结果，支持代码相关任务。
 
 ## RAG 管道
 
@@ -28,3 +33,12 @@
 
 1. 使用奖励函数对 3 个候选答案进行排序。
 2. 按奖励降序排序，并基于 softmax 概率（`exp(rewards) / sum(exp(rewards))`）加权采样最佳答案，模拟 PPO（`Proximal Policy Optimization`）。
+
+## 技术栈
+
+项目使用的技术依赖如下：
+
+1. **模型**：`sentence-transformers`（`all-MiniLM-L6-v2`）
+2. **生产**：`transformers`（`Salesforce/codegen-350M-mono`）
+3. **数据集**：`datasets`（`CodeSearchNet`）
+4. **计算**：`torch`（支持 GPU 加速）、`numpy`
