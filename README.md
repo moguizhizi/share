@@ -42,3 +42,12 @@
 2. **生产**：`transformers`（`Salesforce/codegen-350M-mono`）
 3. **数据集**：`datasets`（`CodeSearchNet`）
 4. **计算**：`torch`（支持 GPU 加速）、`numpy`
+
+## 未来展望
+1. **优化奖励函数，加入语法检查**。
+2. **扩展数据集，支持更多语言**。
+3. **增加交互性和详细输出**。
+
+
+
+
