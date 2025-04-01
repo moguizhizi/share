@@ -1,9 +1,30 @@
 本项目实现了一个基于 RAG（Retrieval-Augmented Generation）的 RL 引导代码助手，旨在通过检索相关代码片段并生成答案来解决用户关于代码的查询。
 系统结合了检索、生成和强化学习（RL）优化三个核心模块，支持代码相关的任务。
 
-**RAG 管道：**
+## RAG 管道
 
-*  数据集：使用 CodeSearchNet 数据集（Python 子集），从中提取了 1000 个函数的代码（func_code_string）和文档字符串（func_documentation_string）作为语料库。
-*  检索：使用 SentenceTransformer（all-MiniLM-L6-v2 模型）将用户查询和代码片段编码为嵌入向量，计算余弦相似度，检索 Top-3 相关代码片段。
-*  生成：使用 Salesforce/codegen-350M-mono 模型生成答案。将检索到的代码片段注入提示（prompt），生成 3 个候选答案。
-*  GPU 加速：所有计算（嵌入、余弦相似度、生成）都在 GPU 上运行（如果可用），通过 torch.device 动态选择设备。
+1. **数据集**：使用 CodeSearchNet 数据集（Python 子集），从中提取了 1000 个函数的代码（`func_code_string`）和文档字符串（`func_documentation_string`）作为语料库。
+2. **检索**：使用 SentenceTransformer（`all-MiniLM-L6-v2` 模型）将用户查询和代码片段编码为嵌入向量，计算余弦相似度，检索 Top-3 相关代码片段。
+3. **生成**：使用 Salesforce/codegen-350M-mono 模型生成答案。将检索到的代码片段注入提示（prompt），生成 3 个候选答案。
+4. **GPU 加速**：所有计算（嵌入、余弦相似度、生成）都在 GPU 上运行（如果可用），通过 `torch.device` 动态选择设备。
+
+## 奖励函数
+
+设计了一个简单的奖励函数，综合考虑以下因素：
+
+1. **正确性**：候选答案是否包含查询中的关键词。
+    1. 计算公式：`correctness = 关键词匹配数 / 关键词总数`。
+    2. 关键词匹配基于小写字符串比较。
+2. **简洁性**：候选答案的长度。
+    1. 计算公式：`brevity = max(0, 1 - (length - 50) / 150)`。
+    2. 假设 50-200 字为理想长度。
+3. **总奖励**：综合正确性和简洁性。
+    1. 计算公式：`reward = 0.7 * correctness + 0.3 * brevity`。
+    2. 权重分配：正确性占 70%，简洁性占 30%。
+
+## RL 优化
+
+使用强化学习对候选答案进行优化，具体步骤如下：
+
+1. 使用奖励函数对 3 个候选答案进行排序。
+2. 按奖励降序排序，并基于 softmax 概率（`exp(rewards) / sum(exp(rewards))`）加权采样最佳答案，模拟 PPO（`Proximal Policy Optimization`）。
